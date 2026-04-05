@@ -18,6 +18,7 @@ interface CalculationResult {
 
 export default function SalaryCalculator() {
   const [employeeName, setEmployeeName] = React.useState("")
+  const [position, setPosition] = React.useState("")
   const [salary, setSalary] = React.useState("")
   const [categories, setCategories] = React.useState<WorkCategory[]>([
     { id: "1", name: "Кузовной ремонт", amount: 0, rate: 20 },
@@ -69,7 +70,7 @@ export default function SalaryCalculator() {
       </style></head>
       <body>
         <h2>Расчёт зарплаты</h2>
-        <p><strong>${name}</strong></p><hr/>
+        <p><strong>${name}</strong>${position ? `<br/><span style="color:#888;font-size:13px">${position}</span>` : ""}</p><hr/>
         <table>
           <tr><td>Оклад</td><td>${baseSalary.toLocaleString("ru-RU")} ₽</td></tr>
           <tr><td>Выработка (итого)</td><td>${result!.worktotal.toLocaleString("ru-RU")} ₽</td></tr>
@@ -89,6 +90,7 @@ export default function SalaryCalculator() {
 
   const reset = () => {
     setEmployeeName("")
+    setPosition("")
     setSalary("")
     setCategories([
       { id: "1", name: "Кузовной ремонт", amount: 0, rate: 20 },
@@ -132,6 +134,16 @@ export default function SalaryCalculator() {
                   />
                 </div>
                 <div className="space-y-1.5">
+                  <label className="text-sm text-muted-foreground">Должность</label>
+                  <input
+                    type="text"
+                    placeholder="Автомеханик"
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                  />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
                   <label className="text-sm text-muted-foreground">Оклад (₽)</label>
                   <input
                     type="number"
@@ -237,9 +249,10 @@ export default function SalaryCalculator() {
 
               {result ? (
                 <div className="space-y-5">
-                  {employeeName && (
-                    <div className="text-sm font-medium text-foreground border-b border-orange-100 pb-3">
-                      {employeeName}
+                  {(employeeName || position) && (
+                    <div className="border-b border-orange-100 pb-3">
+                      {employeeName && <div className="text-sm font-medium text-foreground">{employeeName}</div>}
+                      {position && <div className="text-xs text-muted-foreground mt-0.5">{position}</div>}
                     </div>
                   )}
 

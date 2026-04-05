@@ -127,7 +127,7 @@ const transitionVariants = {
 
 const menuItems = [
   { name: "Возможности", href: "#services" },
-  { name: "Как работает", href: "#solutions" },
+  { name: "Как работает", href: "#calculator" },
   { name: "О сервисе", href: "#about" },
   { name: "Контакты", href: "#contact" },
 ]
@@ -347,7 +347,7 @@ export default function SoftwareDevelopmentWebsite() {
                       <span className="text-nowrap">Попробовать бесплатно</span>
                     </Button>
                   </div>
-                  <Button key={2} size="lg" variant="ghost" className="h-10.5 rounded-xl px-5 hover:text-orange-500">
+                  <Button key={2} size="lg" variant="ghost" className="h-10.5 rounded-xl px-5 hover:text-orange-500" onClick={() => document.getElementById('calculator')?.scrollIntoView({ behavior: 'smooth' })}>
                     <span className="text-nowrap">Как это работает</span>
                   </Button>
                 </AnimatedGroup>

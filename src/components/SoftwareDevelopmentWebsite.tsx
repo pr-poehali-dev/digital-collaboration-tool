@@ -202,7 +202,7 @@ const HeroHeader = () => {
                 </ul>
               </div>
               <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
-                <Button variant="outline" size="sm" className={cn(isScrolled && "lg:hidden")}>
+                <Button variant="outline" size="sm" className={cn(isScrolled && "lg:hidden")} onClick={() => window.location.href = "/login"}>
                   <span>Войти</span>
                 </Button>
                 <Button
@@ -212,6 +212,7 @@ const HeroHeader = () => {
                       ? "lg:inline-flex bg-orange-500 hover:bg-orange-600"
                       : "hidden bg-orange-500 hover:bg-orange-600",
                   )}
+                  onClick={() => window.location.href = "/login"}
                 >
                   <span>Начать</span>
                 </Button>

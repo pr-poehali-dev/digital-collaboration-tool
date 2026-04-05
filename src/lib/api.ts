@@ -2,6 +2,7 @@ const URLS = {
   auth: "https://functions.poehali.dev/7550674b-e90d-4cef-9d9b-da43bc74126d",
   employees: "https://functions.poehali.dev/392c556c-a82b-4ade-85b4-8b897ce8dfa1",
   workCategories: "https://functions.poehali.dev/3c38ccb8-d35d-4422-b77c-35a0f83660ff",
+  calendar: "https://functions.poehali.dev/3e5a0971-5941-4523-af2b-7e5f23636576",
 }
 
 function getToken() {
@@ -108,5 +109,11 @@ export async function apiDeleteCategory(id: number) {
     method: "DELETE",
     headers: authHeaders(),
   })
+  return r.json()
+}
+
+// Calendar
+export async function apiGetWorkDays(year: number, month: number) {
+  const r = await fetch(`${URLS.calendar}?year=${year}&month=${month}`)
   return r.json()
 }

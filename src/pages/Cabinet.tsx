@@ -126,6 +126,10 @@ export default function Cabinet() {
             <span className="font-bold">ЗарплатаПро</span>
           </Link>
           <div className="flex items-center gap-4">
+            <Link to="/cabinet/calc" className="flex items-center gap-1.5 text-sm font-medium rounded-xl bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 transition-colors">
+              <Icon name="Calculator" size={15} />
+              Расчёт зарплаты
+            </Link>
             <span className="text-sm text-muted-foreground hidden sm:block">{user?.name}</span>
             <button onClick={logout} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-orange-500 transition-colors">
               <Icon name="LogOut" size={16} />

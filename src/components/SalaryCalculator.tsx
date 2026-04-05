@@ -1,6 +1,7 @@
 import * as React from "react"
 import Icon from "@/components/ui/icon"
 import { cn } from "@/lib/utils"
+import { apiGetEmployees, apiGetCategories } from "@/lib/api"
 
 interface WorkCategory {
   id: string
@@ -16,6 +17,9 @@ interface CalculationResult {
   worktotal: number
 }
 
+interface SavedEmployee { id: number; name: string; position: string; salary: number }
+interface SavedCategory { id: number; name: string; rate: number }
+
 export default function SalaryCalculator() {
   const [employeeName, setEmployeeName] = React.useState("")
   const [position, setPosition] = React.useState("")
@@ -26,11 +30,48 @@ export default function SalaryCalculator() {
   ])
   const [result, setResult] = React.useState<CalculationResult | null>(null)
 
+  // Справочники
+  const [savedEmployees, setSavedEmployees] = React.useState<SavedEmployee[]>([])
+  const [savedCategories, setSavedCategories] = React.useState<SavedCategory[]>([])
+  const [showEmployeeDropdown, setShowEmployeeDropdown] = React.useState(false)
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false)
+  const dropdownRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    setIsLoggedIn(true)
+    apiGetEmployees().then((res) => { if (res.employees) setSavedEmployees(res.employees) })
+    apiGetCategories().then((res) => { if (res.categories) setSavedCategories(res.categories) })
+  }, [])
+
+  // Закрытие дропдауна при клике вне
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowEmployeeDropdown(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
+  const selectEmployee = (emp: SavedEmployee) => {
+    setEmployeeName(emp.name)
+    setPosition(emp.position || "")
+    setSalary(String(emp.salary))
+    setShowEmployeeDropdown(false)
+    setResult(null)
+  }
+
+  const loadCategoriesFromSaved = () => {
+    if (savedCategories.length === 0) return
+    setCategories(savedCategories.map((c) => ({ id: String(c.id), name: c.name, amount: 0, rate: c.rate })))
+    setResult(null)
+  }
+
   const addCategory = () => {
-    setCategories([
-      ...categories,
-      { id: Date.now().toString(), name: "", amount: 0, rate: 10 },
-    ])
+    setCategories([...categories, { id: Date.now().toString(), name: "", amount: 0, rate: 10 }])
   }
 
   const removeCategory = (id: string) => {
@@ -118,10 +159,54 @@ export default function SalaryCalculator() {
 
             {/* Employee block */}
             <div className="rounded-2xl border border-orange-200 bg-card p-6 space-y-4">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Icon name="User" size={18} className="text-orange-500" />
-                Сотрудник
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Icon name="User" size={18} className="text-orange-500" />
+                  Сотрудник
+                </h3>
+                {!isLoggedIn && (
+                  <a href="/login" className="text-xs text-orange-500 hover:underline flex items-center gap-1">
+                    <Icon name="LogIn" size={13} />
+                    Войдите для выбора из справочника
+                  </a>
+                )}
+              </div>
+
+              {/* Выбор из справочника */}
+              {isLoggedIn && savedEmployees.length > 0 && (
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
+                    className="w-full flex items-center justify-between gap-2 rounded-xl border border-orange-300 bg-orange-500/10 hover:bg-orange-500/15 text-sm px-4 py-2.5 transition-colors"
+                  >
+                    <span className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-medium">
+                      <Icon name="BookUser" size={15} />
+                      Выбрать из справочника
+                    </span>
+                    <Icon name={showEmployeeDropdown ? "ChevronUp" : "ChevronDown"} size={15} className="text-orange-500" />
+                  </button>
+
+                  {showEmployeeDropdown && (
+                    <div className="absolute z-20 top-full mt-1 w-full rounded-xl border border-orange-200 bg-card shadow-lg overflow-hidden">
+                      {savedEmployees.map((emp) => (
+                        <button
+                          key={emp.id}
+                          onClick={() => selectEmployee(emp)}
+                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-orange-50 dark:hover:bg-orange-950 transition-colors text-left"
+                        >
+                          <div>
+                            <div className="text-sm font-medium">{emp.name}</div>
+                            {emp.position && <div className="text-xs text-muted-foreground">{emp.position}</div>}
+                          </div>
+                          <div className="text-xs text-muted-foreground shrink-0 ml-4">{emp.salary.toLocaleString("ru-RU")} ₽</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm text-muted-foreground">ФИО сотрудника</label>
@@ -158,13 +243,23 @@ export default function SalaryCalculator() {
 
             {/* Work categories block */}
             <div className="rounded-2xl border border-orange-200 bg-card p-6 space-y-4">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Icon name="Wrench" size={18} className="text-orange-500" />
-                Виды выработки
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Icon name="Wrench" size={18} className="text-orange-500" />
+                  Виды выработки
+                </h3>
+                {isLoggedIn && savedCategories.length > 0 && (
+                  <button
+                    onClick={loadCategoriesFromSaved}
+                    className="text-xs text-orange-500 hover:underline flex items-center gap-1"
+                  >
+                    <Icon name="RefreshCw" size={13} />
+                    Загрузить из справочника
+                  </button>
+                )}
+              </div>
 
               <div className="space-y-3">
-                {/* Header */}
                 <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground px-1">
                   <span className="col-span-5">Вид работ</span>
                   <span className="col-span-3">Сумма (₽)</span>
@@ -188,15 +283,13 @@ export default function SalaryCalculator() {
                       onChange={(e) => updateCategory(cat.id, "amount", parseFloat(e.target.value) || 0)}
                       className="col-span-3 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
                     />
-                    <div className="col-span-3 flex items-center gap-1">
-                      <input
-                        type="number"
-                        placeholder="10"
-                        value={cat.rate || ""}
-                        onChange={(e) => updateCategory(cat.id, "rate", parseFloat(e.target.value) || 0)}
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      placeholder="10"
+                      value={cat.rate || ""}
+                      onChange={(e) => updateCategory(cat.id, "rate", parseFloat(e.target.value) || 0)}
+                      className="col-span-3 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                    />
                     <button
                       onClick={() => removeCategory(cat.id)}
                       className="col-span-1 flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
@@ -282,7 +375,6 @@ export default function SalaryCalculator() {
                     </div>
                   </div>
 
-                  {/* Breakdown by categories */}
                   {categories.some((c) => c.amount > 0) && (
                     <div className="space-y-2 mt-2">
                       <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Детализация выработки</div>
@@ -295,7 +387,6 @@ export default function SalaryCalculator() {
                     </div>
                   )}
 
-                  {/* Action buttons */}
                   <div className="flex gap-2 pt-2 border-t border-orange-100">
                     <button
                       onClick={printResult}

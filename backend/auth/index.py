@@ -22,16 +22,28 @@ def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
-    path = event.get("path", "/")
     method = event.get("httpMethod", "GET")
     body = json.loads(event.get("body") or "{}")
+    action = body.get("action", "")
+    token = event.get("headers", {}).get("X-Session-Token", "")
 
     conn = get_conn()
     cur = conn.cursor()
 
     try:
+        # Проверка сессии (GET)
+        if method == "GET":
+            cur.execute(
+                "SELECT u.id, u.name, u.email FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = %s AND s.expires_at > NOW()",
+                (token,)
+            )
+            user = cur.fetchone()
+            if not user:
+                return {"statusCode": 401, "headers": CORS, "body": json.dumps({"error": "Не авторизован"}, ensure_ascii=False)}
+            return {"statusCode": 200, "headers": CORS, "body": json.dumps({"user": {"id": user[0], "name": user[1], "email": user[2]}}, ensure_ascii=False)}
+
         # Регистрация
-        if path.endswith("/register") and method == "POST":
+        if action == "register":
             email = body.get("email", "").strip().lower()
             password = body.get("password", "")
             name = body.get("name", "").strip()
@@ -50,15 +62,12 @@ def handler(event: dict, context) -> dict:
             user = cur.fetchone()
             token = secrets.token_hex(32)
             expires = datetime.now() + timedelta(days=30)
-            cur.execute(
-                "INSERT INTO sessions (user_id, token, expires_at) VALUES (%s, %s, %s)",
-                (user[0], token, expires)
-            )
+            cur.execute("INSERT INTO sessions (user_id, token, expires_at) VALUES (%s, %s, %s)", (user[0], token, expires))
             conn.commit()
             return {"statusCode": 200, "headers": CORS, "body": json.dumps({"token": token, "user": {"id": user[0], "name": user[1], "email": user[2]}}, ensure_ascii=False)}
 
         # Вход
-        if path.endswith("/login") and method == "POST":
+        if action == "login":
             email = body.get("email", "").strip().lower()
             password = body.get("password", "")
 
@@ -73,26 +82,13 @@ def handler(event: dict, context) -> dict:
             conn.commit()
             return {"statusCode": 200, "headers": CORS, "body": json.dumps({"token": token, "user": {"id": user[0], "name": user[1], "email": user[2]}}, ensure_ascii=False)}
 
-        # Проверка сессии
-        if path.endswith("/me") and method == "GET":
-            token = event.get("headers", {}).get("X-Session-Token", "")
-            cur.execute(
-                "SELECT u.id, u.name, u.email FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = %s AND s.expires_at > NOW()",
-                (token,)
-            )
-            user = cur.fetchone()
-            if not user:
-                return {"statusCode": 401, "headers": CORS, "body": json.dumps({"error": "Не авторизован"}, ensure_ascii=False)}
-            return {"statusCode": 200, "headers": CORS, "body": json.dumps({"user": {"id": user[0], "name": user[1], "email": user[2]}}, ensure_ascii=False)}
-
         # Выход
-        if path.endswith("/logout") and method == "POST":
-            token = event.get("headers", {}).get("X-Session-Token", "")
+        if action == "logout":
             cur.execute("UPDATE sessions SET expires_at = NOW() WHERE token = %s", (token,))
             conn.commit()
             return {"statusCode": 200, "headers": CORS, "body": json.dumps({"ok": True}, ensure_ascii=False)}
 
-        return {"statusCode": 404, "headers": CORS, "body": json.dumps({"error": "Not found"}, ensure_ascii=False)}
+        return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Неизвестное действие"}, ensure_ascii=False)}
 
     finally:
         cur.close()

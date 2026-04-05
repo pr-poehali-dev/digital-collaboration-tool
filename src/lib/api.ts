@@ -13,30 +13,37 @@ function authHeaders() {
 }
 
 export async function apiRegister(email: string, password: string, name: string) {
-  const r = await fetch(URLS.auth + "/register", {
+  const r = await fetch(URLS.auth, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, name }),
+    body: JSON.stringify({ action: "register", email, password, name }),
   })
   return r.json()
 }
 
 export async function apiLogin(email: string, password: string) {
-  const r = await fetch(URLS.auth + "/login", {
+  const r = await fetch(URLS.auth, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ action: "login", email, password }),
   })
   return r.json()
 }
 
 export async function apiMe() {
-  const r = await fetch(URLS.auth + "/me", { headers: authHeaders() })
+  const r = await fetch(URLS.auth, {
+    method: "GET",
+    headers: authHeaders(),
+  })
   return r.json()
 }
 
 export async function apiLogout() {
-  await fetch(URLS.auth + "/logout", { method: "POST", headers: authHeaders() })
+  await fetch(URLS.auth, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ action: "logout" }),
+  })
   localStorage.removeItem("token")
 }
 

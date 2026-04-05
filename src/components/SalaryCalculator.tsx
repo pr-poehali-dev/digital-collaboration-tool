@@ -49,6 +49,44 @@ export default function SalaryCalculator() {
     setResult({ gross: Math.round(gross), ndfl, net, worktotal: Math.round(workTotal) })
   }
 
+  const printResult = () => {
+    const name = employeeName || "Сотрудник"
+    const baseSalary = parseFloat(salary) || 0
+    const details = categories
+      .filter((c) => c.amount > 0)
+      .map((c) => `<tr><td>${c.name || "Без названия"} (${c.rate}%)</td><td style="text-align:right">+${Math.round((c.amount * c.rate) / 100).toLocaleString("ru-RU")} ₽</td></tr>`)
+      .join("")
+    const html = `
+      <html><head><meta charset="utf-8"><title>Расчёт зарплаты — ${name}</title>
+      <style>
+        body { font-family: Arial, sans-serif; max-width: 480px; margin: 40px auto; color: #111; }
+        h2 { color: #f97316; } hr { border: none; border-top: 1px solid #f97316; margin: 16px 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        td { padding: 6px 0; } td:last-child { text-align: right; font-weight: 600; }
+        .total { font-size: 24px; font-weight: 700; color: #f97316; }
+        .ndfl { color: #ef4444; }
+        .label { color: #888; font-size: 12px; margin-bottom: 4px; }
+      </style></head>
+      <body>
+        <h2>Расчёт зарплаты</h2>
+        <p><strong>${name}</strong></p><hr/>
+        <table>
+          <tr><td>Оклад</td><td>${baseSalary.toLocaleString("ru-RU")} ₽</td></tr>
+          <tr><td>Выработка (итого)</td><td>${result!.worktotal.toLocaleString("ru-RU")} ₽</td></tr>
+          ${details}
+        </table><hr/>
+        <table>
+          <tr><td>Начислено</td><td>${result!.gross.toLocaleString("ru-RU")} ₽</td></tr>
+          <tr class="ndfl"><td>НДФЛ (13%)</td><td>−${result!.ndfl.toLocaleString("ru-RU")} ₽</td></tr>
+        </table><hr/>
+        <div class="label">К выплате</div>
+        <div class="total">${result!.net.toLocaleString("ru-RU")} ₽</div>
+        <p style="font-size:12px;color:#aaa;margin-top:32px">Расчёт выполнен: ${new Date().toLocaleDateString("ru-RU")}</p>
+      </body></html>`
+    const win = window.open("", "_blank")
+    if (win) { win.document.write(html); win.document.close(); win.print() }
+  }
+
   const reset = () => {
     setEmployeeName("")
     setSalary("")
@@ -243,6 +281,24 @@ export default function SalaryCalculator() {
                       ))}
                     </div>
                   )}
+
+                  {/* Action buttons */}
+                  <div className="flex gap-2 pt-2 border-t border-orange-100">
+                    <button
+                      onClick={printResult}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-orange-300 bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 text-sm font-medium py-2.5 transition-colors"
+                    >
+                      <Icon name="Printer" size={15} />
+                      Печать
+                    </button>
+                    <button
+                      onClick={printResult}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium py-2.5 transition-colors"
+                    >
+                      <Icon name="Download" size={15} />
+                      Сохранить PDF
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-48 text-center gap-3">

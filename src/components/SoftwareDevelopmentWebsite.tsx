@@ -5,6 +5,7 @@ import { ArrowRight, ChevronRight, Menu, X, Calculator, Zap, ShieldCheck, Clock 
 import { motion, type Variants } from "framer-motion"
 import { GridMotion } from "./ui/grid-motion"
 import { cn } from "@/lib/utils"
+import SalaryCalculator from "./SalaryCalculator"
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
@@ -527,6 +528,8 @@ export default function SoftwareDevelopmentWebsite() {
             </Card>
           </div>
         </section>
+
+        <SalaryCalculator />
       </main>
 
       <footer className="bg-background border-t border-orange-200">

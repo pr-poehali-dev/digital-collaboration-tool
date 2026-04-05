@@ -26,6 +26,10 @@ export default function SalaryCalculator() {
   const [salary, setSalary] = React.useState("")
   const [normDays, setNormDays] = React.useState("22")
   const [workedDays, setWorkedDays] = React.useState("")
+  const [selectedMonth, setSelectedMonth] = React.useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  })
   const [categories, setCategories] = React.useState<WorkCategory[]>([
     { id: "1", name: "Кузовной ремонт", amount: 0, rate: 20 },
     { id: "2", name: "Слесарные работы", amount: 0, rate: 15 },
@@ -120,6 +124,7 @@ export default function SalaryCalculator() {
       </style></head>
       <body>
         <h2>Расчёт зарплаты</h2>
+        ${periodLabel ? `<p style="color:#f97316;font-size:13px;margin:0 0 4px">Период: ${periodLabel}</p>` : ""}
         <p><strong>${name}</strong>${position ? `<br/><span style="color:#888;font-size:13px">${position}</span>` : ""}</p><hr/>
         <table>
           <tr><td>Оклад${workedDays && parseFloat(workedDays) < parseFloat(normDays) ? ` (${workedDays}/${normDays} дн.)` : ""}</td><td>${effectiveSalary.toLocaleString("ru-RU")} ₽</td></tr>
@@ -137,6 +142,13 @@ export default function SalaryCalculator() {
     const win = window.open("", "_blank")
     if (win) { win.document.write(html); win.document.close(); win.print() }
   }
+
+  const periodLabel = React.useMemo(() => {
+    if (!selectedMonth) return ""
+    const [y, m] = selectedMonth.split("-")
+    const months = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"]
+    return `${months[parseInt(m) - 1]} ${y}`
+  }, [selectedMonth])
 
   const reset = () => {
     setEmployeeName("")
@@ -167,6 +179,25 @@ export default function SalaryCalculator() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Form */}
           <div className="lg:col-span-3 space-y-6">
+
+            {/* Period block */}
+            <div className="rounded-2xl border border-orange-200 bg-card p-6 space-y-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Icon name="Calendar" size={18} className="text-orange-500" />
+                Отчётный период
+              </h3>
+              <div className="flex items-center gap-3">
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                />
+                {periodLabel && (
+                  <span className="text-sm font-medium text-orange-500">{periodLabel}</span>
+                )}
+              </div>
+            </div>
 
             {/* Employee block */}
             <div className="rounded-2xl border border-orange-200 bg-card p-6 space-y-4">
@@ -391,6 +422,12 @@ export default function SalaryCalculator() {
 
               {result ? (
                 <div className="space-y-5">
+                  {periodLabel && (
+                    <div className="flex items-center gap-1.5 text-xs text-orange-600 dark:text-orange-400 bg-orange-500/10 border border-orange-200 rounded-lg px-3 py-1.5">
+                      <Icon name="Calendar" size={13} />
+                      {periodLabel}
+                    </div>
+                  )}
                   {(employeeName || position) && (
                     <div className="border-b border-orange-100 pb-3">
                       {employeeName && <div className="text-sm font-medium text-foreground">{employeeName}</div>}

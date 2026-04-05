@@ -24,6 +24,8 @@ export default function SalaryCalculator() {
   const [employeeName, setEmployeeName] = React.useState("")
   const [position, setPosition] = React.useState("")
   const [salary, setSalary] = React.useState("")
+  const [normDays, setNormDays] = React.useState("22")
+  const [workedDays, setWorkedDays] = React.useState("")
   const [categories, setCategories] = React.useState<WorkCategory[]>([
     { id: "1", name: "Кузовной ремонт", amount: 0, rate: 20 },
     { id: "2", name: "Слесарные работы", amount: 0, rate: 15 },
@@ -82,10 +84,17 @@ export default function SalaryCalculator() {
     setCategories(categories.map((c) => (c.id === id ? { ...c, [field]: value } : c)))
   }
 
+  const effectiveSalary = React.useMemo(() => {
+    const base = parseFloat(salary) || 0
+    const norm = parseFloat(normDays) || 0
+    const worked = parseFloat(workedDays) || 0
+    if (norm > 0 && worked > 0 && worked < norm) return Math.round((base / norm) * worked)
+    return base
+  }, [salary, normDays, workedDays])
+
   const calculate = () => {
-    const baseSalary = parseFloat(salary) || 0
     const workTotal = categories.reduce((sum, c) => sum + (c.amount * c.rate) / 100, 0)
-    const gross = baseSalary + workTotal
+    const gross = effectiveSalary + workTotal
     const ndfl = Math.round(gross * 0.13)
     const net = Math.round(gross - ndfl)
     setResult({ gross: Math.round(gross), ndfl, net, worktotal: Math.round(workTotal) })
@@ -113,7 +122,7 @@ export default function SalaryCalculator() {
         <h2>Расчёт зарплаты</h2>
         <p><strong>${name}</strong>${position ? `<br/><span style="color:#888;font-size:13px">${position}</span>` : ""}</p><hr/>
         <table>
-          <tr><td>Оклад</td><td>${baseSalary.toLocaleString("ru-RU")} ₽</td></tr>
+          <tr><td>Оклад${workedDays && parseFloat(workedDays) < parseFloat(normDays) ? ` (${workedDays}/${normDays} дн.)` : ""}</td><td>${effectiveSalary.toLocaleString("ru-RU")} ₽</td></tr>
           <tr><td>Выработка (итого)</td><td>${result!.worktotal.toLocaleString("ru-RU")} ₽</td></tr>
           ${details}
         </table><hr/>
@@ -133,6 +142,8 @@ export default function SalaryCalculator() {
     setEmployeeName("")
     setPosition("")
     setSalary("")
+    setNormDays("22")
+    setWorkedDays("")
     setCategories([
       { id: "1", name: "Кузовной ремонт", amount: 0, rate: 20 },
       { id: "2", name: "Слесарные работы", amount: 0, rate: 15 },
@@ -239,6 +250,44 @@ export default function SalaryCalculator() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Timesheet block */}
+            <div className="rounded-2xl border border-orange-200 bg-card p-6 space-y-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Icon name="CalendarDays" size={18} className="text-orange-500" />
+                Табель рабочего времени
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm text-muted-foreground">Норма дней в месяце</label>
+                  <input
+                    type="number"
+                    value={normDays}
+                    onChange={(e) => setNormDays(e.target.value)}
+                    placeholder="22"
+                    min={1}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm text-muted-foreground">Отработано дней</label>
+                  <input
+                    type="number"
+                    value={workedDays}
+                    onChange={(e) => setWorkedDays(e.target.value)}
+                    placeholder={normDays}
+                    min={0}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                  />
+                </div>
+              </div>
+              {workedDays && parseFloat(workedDays) < parseFloat(normDays) && parseFloat(salary) > 0 && (
+                <div className="rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 px-3 py-2 text-sm text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                  <Icon name="Info" size={14} />
+                  Оклад по табелю: <strong>{effectiveSalary.toLocaleString("ru-RU")} ₽</strong> вместо {(parseFloat(salary)||0).toLocaleString("ru-RU")} ₽
+                </div>
+              )}
             </div>
 
             {/* Work categories block */}
@@ -351,8 +400,10 @@ export default function SalaryCalculator() {
 
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Оклад</span>
-                      <span className="font-medium">{(parseFloat(salary) || 0).toLocaleString("ru-RU")} ₽</span>
+                      <span className="text-muted-foreground">
+                        Оклад{workedDays && parseFloat(workedDays) < parseFloat(normDays) ? ` (${workedDays}/${normDays} дн.)` : ""}
+                      </span>
+                      <span className="font-medium">{effectiveSalary.toLocaleString("ru-RU")} ₽</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Выработка (итого)</span>
